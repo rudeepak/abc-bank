@@ -1,46 +1,92 @@
 package com.abc;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class Bank {
-    private List<Customer> customers;
+public final class Bank {	
+	private static final Set<Customer> customers = new HashSet<Customer>();
 
-    public Bank() {
-        customers = new ArrayList<Customer>();
-    }
+	private Bank() {}
 
-    public void addCustomer(Customer customer) {
-        customers.add(customer);
-    }
 
-    public String customerSummary() {
-        String summary = "Customer Summary";
-        for (Customer c : customers)
-            summary += "\n - " + c.getName() + " (" + format(c.getNumberOfAccounts(), "account") + ")";
-        return summary;
-    }
+	public static final boolean balanceTransfer(final Customer customer, final Account fromAccount, final Account toAccount, final String amount) {
+		if (amount == null) {
+			throw new IllegalArgumentException("Fund must be greater than zero.");			
+		}
+		
+		boolean done = false;		
+		//boolean isValid = validateAmount(amount);	
+		customers.contains(customer);
+		List<Account> accounts = customer.getAccounts();
+		accounts.contains(fromAccount);
+		accounts.contains(toAccount);
+			
+		boolean valid = verifyBalance(fromAccount, amount);		
+		if (!valid) {
+			throw new IllegalArgumentException("Insufficient fund in " + fromAccount.getAccountType().getAccountName());			
+		}		
+		
+		fromAccount.withdraw(amount);	
+		toAccount.deposit(amount);							
+						
+		return done;
+	}
 
-    //Make sure correct plural of word is created based on the number passed in:
-    //If number passed in is 1 just return the word otherwise add an 's' at the end
-    private String format(int number, String word) {
-        return number + " " + (number == 1 ? word : word + "s");
-    }
 
-    public double totalInterestPaid() {
-        double total = 0;
-        for(Customer c: customers)
-            total += c.totalInterestEarned();
-        return total;
-    }
+	private static boolean verifyBalance(final Account account, final String fund) {
+		BigDecimal accountBalance  = account.sumTransactions();
+		BigDecimal withdraw  = new BigDecimal(fund);
+		
+		if (accountBalance.compareTo(withdraw) < 0) {
+			return false;
+		}
+		
+		return true;
+		
+	}
 
-    public String getFirstCustomer() {
-        try {
-            customers = null;
-            return customers.get(0).getName();
-        } catch (Exception e){
-            e.printStackTrace();
-            return "Error";
-        }
-    }
+	public static final String customerSummary() {
+		StringBuilder summary = new StringBuilder("Customer Summary - ");
+
+		for (Customer cust : customers) {
+			summary.append(cust.getCustomerName());
+			summary.append(" (");
+			summary.append(format(cust.getNumberOfAccounts()));
+			summary.append(")");
+		}
+
+		return summary.toString();
+	}
+
+	// Make sure correct plural of word is created based on the number passed
+	// in: If number passed in is 1 just return the word otherwise add an 's' at the
+	// end
+	private static final String format(int number) {
+		if (number > 1) {
+			return number + " accounts";
+		}
+		return number + " account";
+	}
+
+	public static final BigDecimal totalInterestPaid() {
+		BigDecimal totalInterest = BigDecimal.ZERO;
+		for (Customer cust : customers) {
+			BigDecimal interestEarned = cust.totalInterestEarned();			
+			totalInterest = totalInterest.add(interestEarned);
+		}
+
+		return totalInterest;
+	}
+	
+	public static final void addCustomer(final Customer customer) {
+		customers.add(customer);
+	}
+	
+	
+	public static final void removeAllCustomers() {
+		customers.clear();
+		return;
+	}
 }

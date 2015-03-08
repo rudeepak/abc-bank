@@ -1,16 +1,21 @@
 package com.abc;
 
-import java.util.Calendar;
-import java.util.Date;
+import java.math.BigDecimal;
 
 public class Transaction {
-    public final double amount;
+	private final String transactionAmount;
+	private final long transactionTime;
 
-    private Date transactionDate;
+	public Transaction(String amount) {
+		transactionAmount = amount;
+		transactionTime = System.currentTimeMillis();
+	}
 
-    public Transaction(double amount) {
-        this.amount = amount;
-        this.transactionDate = DateProvider.getInstance().now();
-    }
+	public long getTransactionTime() {
+		return transactionTime;
+	}
 
+	public BigDecimal getTransactionAmount() {
+		return new BigDecimal(transactionAmount);
+	}
 }

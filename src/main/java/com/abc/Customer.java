@@ -1,78 +1,95 @@
 package com.abc;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import static java.lang.Math.abs;
-
 public class Customer {
-    private String name;
-    private List<Account> accounts;
+	private static final String WITHDRAWAL = " withdrawal ";
+	private static final String DEPOSIT = " deposit ";
 
-    public Customer(String name) {
-        this.name = name;
-        this.accounts = new ArrayList<Account>();
-    }
+	private final String name;
+	private final List<Account> accounts;
 
-    public String getName() {
-        return name;
-    }
+	public Customer(String name) {
+		this.name = name;
+		this.accounts = new ArrayList<Account>();
+	}
 
-    public Customer openAccount(Account account) {
-        accounts.add(account);
-        return this;
-    }
+	public Customer(String name, Account account) {
+		this(name);
+		accounts.add(account);
+	}
+	
+	public String getCustomerName() {
+		return name;
+	}
 
-    public int getNumberOfAccounts() {
-        return accounts.size();
-    }
+	public List<Account> getAccounts() {
+		return Collections.unmodifiableList(accounts);
+	}
 
-    public double totalInterestEarned() {
-        double total = 0;
-        for (Account a : accounts)
-            total += a.interestEarned();
-        return total;
-    }
+	public boolean openAccount(final Account account) {
+		accounts.add(account);
+		return true;
+	}
 
-    public String getStatement() {
-        String statement = null;
-        statement = "Statement for " + name + "\n";
-        double total = 0.0;
-        for (Account a : accounts) {
-            statement += "\n" + statementForAccount(a) + "\n";
-            total += a.sumTransactions();
-        }
-        statement += "\nTotal In All Accounts " + toDollars(total);
-        return statement;
-    }
+	public int getNumberOfAccounts() {
+		return accounts.size();
+	}
 
-    private String statementForAccount(Account a) {
-        String s = "";
+	public BigDecimal totalInterestEarned() {
+		BigDecimal sum = BigDecimal.ZERO;
+		for (Account acct : accounts) {
+			BigDecimal interest = acct.interestEarned();
+			sum = sum.add(interest);
+		}
+		return sum;
+	}
 
-       //Translate to pretty account type
-        switch(a.getAccountType()){
-            case Account.CHECKING:
-                s += "Checking Account\n";
-                break;
-            case Account.SAVINGS:
-                s += "Savings Account\n";
-                break;
-            case Account.MAXI_SAVINGS:
-                s += "Maxi Savings Account\n";
-                break;
-        }
+	public String getStatement() {
+		StringBuilder statement = new StringBuilder("Bank statement for ");
+		statement.append(name);
+		statement.append("\n");
 
-        //Now total up all the transactions
-        double total = 0.0;
-        for (Transaction t : a.transactions) {
-            s += "  " + (t.amount < 0 ? "withdrawal" : "deposit") + " " + toDollars(t.amount) + "\n";
-            total += t.amount;
-        }
-        s += "Total " + toDollars(total);
-        return s;
-    }
+		BigDecimal allAccountTotal = BigDecimal.ZERO;
+		for (Account acct : accounts) {			
+			statement.append(statementForAccount(acct));
+			allAccountTotal = allAccountTotal.add(acct.sumTransactions());
+			statement.append("\n\n");
+		}
+		statement.append("Total in All Accounts ");
+		statement.append(toDollars(allAccountTotal));
 
-    private String toDollars(double d){
-        return String.format("$%,.2f", abs(d));
-    }
+		return statement.toString();
+	}
+
+	private String statementForAccount(final Account account) {
+		// Translate to pretty account type
+		AccountType acctType = account.getAccountType();
+		StringBuilder str = new StringBuilder(acctType.getAccountName());
+		str.append("\n");
+		// Now total up all the transactions
+		BigDecimal totalTxn = BigDecimal.ZERO;
+		for (Transaction txn : account.getTransactions()) {
+			BigDecimal txnAmount = txn.getTransactionAmount();
+			if (txnAmount.compareTo(BigDecimal.ZERO) < 0) {
+				str.append(WITHDRAWAL);
+			}
+			else {
+				str.append(DEPOSIT);
+			}
+
+			str.append(toDollars(txnAmount));
+			str.append("\n");
+			totalTxn = totalTxn.add(txnAmount);
+		}
+		str.append("Total " + toDollars(totalTxn));
+		return str.toString();
+	}
+
+	private String toDollars(BigDecimal d) {
+		return String.format("$%,.2f", d.abs());
+	}
 }
